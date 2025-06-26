@@ -1,11 +1,15 @@
 # Development Dockerfile for Next.js Portfolio
-FROM node:18-alpine
+FROM node:18-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install dependencies for building native modules
-RUN apk add --no-cache libc6-compat
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
@@ -19,5 +23,9 @@ COPY . .
 # Expose port 3000
 EXPOSE 3000
 
-# Start the development server
-CMD ["npm", "run", "dev"] 
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000 || exit 1
+
+# Start the development server with specific host binding
+CMD ["npm", "run", "dev", "--", "--hostname", "0.0.0.0"] 
